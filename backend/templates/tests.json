@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Get all templates",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": [
+        {
+          "id": "number",
+          "category": "string",
+          "text": "string"
+        }
+      ],
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get templates by category",
+      "method": "GET",
+      "path": "/?category=Сантехника",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "partial"
+    }
+  ]
+}
