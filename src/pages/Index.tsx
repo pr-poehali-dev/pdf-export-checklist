@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -17,7 +16,7 @@ interface ChecklistItem {
   id: string;
   title: string;
   regulation: string;
-  checked: boolean;
+  compliance: 'compliant' | 'non-compliant' | 'not-checked';
   comment: string;
   photos: string[];
 }
@@ -39,24 +38,22 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('new');
   const [inspectionDate, setInspectionDate] = useState(new Date().toISOString().split('T')[0]);
   const [address, setAddress] = useState('');
-  const [inspectorSignature, setInspectorSignature] = useState('');
-  const [clientSignature, setClientSignature] = useState('');
   const [currentInspectionId, setCurrentInspectionId] = useState<number | null>(null);
   const [savedInspections, setSavedInspections] = useState<SavedInspection[]>([]);
   const [templates, setTemplates] = useState<CommentTemplate[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
-    { id: '1', title: 'Сантехника', regulation: 'СП 30.13330.2020, ГОСТ 23289-94', checked: false, comment: '', photos: [] },
-    { id: '2', title: 'Отопление', regulation: 'СП 60.13330.2020, ГОСТ 30494-2011', checked: false, comment: '', photos: [] },
-    { id: '3', title: 'Двери', regulation: 'ГОСТ 31173-2016, СП 54.13330.2016', checked: false, comment: '', photos: [] },
-    { id: '4', title: 'Электрика', regulation: 'ПУЭ 7, ГОСТ Р 50571.1-2009', checked: false, comment: '', photos: [] },
-    { id: '5', title: 'Штукатурка', regulation: 'СП 71.13330.2017, ГОСТ 31724-2012', checked: false, comment: '', photos: [] },
-    { id: '6', title: 'Вентиляция', regulation: 'СП 60.13330.2020, ГОСТ 30494-2011', checked: false, comment: '', photos: [] },
-    { id: '7', title: 'Уровни пола и стен', regulation: 'СП 71.13330.2017, СНиП 3.04.01-87', checked: false, comment: '', photos: [] },
-    { id: '8', title: 'Окна', regulation: 'ГОСТ 30971-2012, СП 23-101-2004', checked: false, comment: '', photos: [] },
-    { id: '9', title: 'Ограждения (балконы/террасы)', regulation: 'ГОСТ 25772-83, СП 54.13330.2016', checked: false, comment: '', photos: [] },
-    { id: '10', title: 'Фасад', regulation: 'СП 293.1325800.2017, ГОСТ 31310-2015', checked: false, comment: '', photos: [] },
+    { id: '1', title: 'Сантехника', regulation: 'СП 30.13330.2020, ГОСТ 23289-94', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '2', title: 'Отопление', regulation: 'СП 60.13330.2020, ГОСТ 30494-2011', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '3', title: 'Двери', regulation: 'ГОСТ 31173-2016, СП 54.13330.2016', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '4', title: 'Электрика', regulation: 'ПУЭ 7, ГОСТ Р 50571.1-2009', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '5', title: 'Штукатурка', regulation: 'СП 71.13330.2017, ГОСТ 31724-2012', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '6', title: 'Вентиляция', regulation: 'СП 60.13330.2020, ГОСТ 30494-2011', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '7', title: 'Уровни пола и стен', regulation: 'СП 71.13330.2017, СНиП 3.04.01-87', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '8', title: 'Окна', regulation: 'ГОСТ 30971-2012, СП 23-101-2004', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '9', title: 'Ограждения (балконы/террасы)', regulation: 'ГОСТ 25772-83, СП 54.13330.2016', compliance: 'not-checked', comment: '', photos: [] },
+    { id: '10', title: 'Фасад', regulation: 'СП 293.1325800.2017, ГОСТ 31310-2015', compliance: 'not-checked', comment: '', photos: [] },
   ]);
 
   useEffect(() => {
@@ -91,8 +88,6 @@ const Index = () => {
       
       setAddress(data.address);
       setInspectionDate(data.inspectionDate);
-      setInspectorSignature(data.inspectorSignature || '');
-      setClientSignature(data.clientSignature || '');
       setChecklist(data.checklist);
       setCurrentInspectionId(id);
       setActiveTab('new');
@@ -107,8 +102,6 @@ const Index = () => {
     const data = {
       address,
       inspectionDate,
-      inspectorSignature,
-      clientSignature,
       checklist
     };
 
@@ -147,18 +140,16 @@ const Index = () => {
       if (currentInspectionId === id) {
         setCurrentInspectionId(null);
         setAddress('');
-        setInspectorSignature('');
-        setClientSignature('');
-        setChecklist(checklist.map(item => ({ ...item, checked: false, comment: '', photos: [] })));
+        setChecklist(checklist.map(item => ({ ...item, compliance: 'not-checked' as const, comment: '', photos: [] })));
       }
     } catch (error) {
       toast.error('Ошибка удаления');
     }
   };
 
-  const handleCheckChange = (id: string, checked: boolean) => {
+  const handleComplianceChange = (id: string, value: 'compliant' | 'non-compliant' | 'not-checked') => {
     setChecklist(checklist.map(item => 
-      item.id === id ? { ...item, checked } : item
+      item.id === id ? { ...item, compliance: value } : item
     ));
   };
 
@@ -278,9 +269,7 @@ const Index = () => {
                   onClick={() => {
                     setCurrentInspectionId(null);
                     setAddress('');
-                    setInspectorSignature('');
-                    setClientSignature('');
-                    setChecklist(checklist.map(item => ({ ...item, checked: false, comment: '', photos: [] })));
+                    setChecklist(checklist.map(item => ({ ...item, compliance: 'not-checked' as const, comment: '', photos: [] })));
                   }} 
                   variant="ghost"
                 >
@@ -344,23 +333,34 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {checklist.map((item) => (
-                    <div key={item.id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id={`check-${item.id}`}
-                          checked={item.checked}
-                          onCheckedChange={(checked) => handleCheckChange(item.id, checked as boolean)}
-                          className="mt-1"
-                        />
+                    <div key={item.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="space-y-3">
                         <div className="flex-1 space-y-1">
-                          <Label htmlFor={`check-${item.id}`} className="text-base font-semibold cursor-pointer">
-                            {item.title}
-                          </Label>
+                          <h3 className="text-base font-semibold">{item.title}</h3>
                           <p className="text-xs text-muted-foreground">{item.regulation}</p>
                         </div>
+
+                        <RadioGroup 
+                          value={item.compliance} 
+                          onValueChange={(value) => handleComplianceChange(item.id, value as 'compliant' | 'non-compliant' | 'not-checked')}
+                          className="flex gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="compliant" id={`compliant-${item.id}`} />
+                            <Label htmlFor={`compliant-${item.id}`} className="cursor-pointer font-normal">
+                              ✓ Соответствует нормам
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="non-compliant" id={`non-compliant-${item.id}`} />
+                            <Label htmlFor={`non-compliant-${item.id}`} className="cursor-pointer font-normal">
+                              ✗ Не соответствует нормам
+                            </Label>
+                          </div>
+                        </RadioGroup>
                       </div>
 
-                      <div className="ml-9 space-y-3">
+                      <div className="space-y-3">
                         <div className="flex gap-2">
                           <Select 
                             value={selectedCategory} 
@@ -441,45 +441,6 @@ const Index = () => {
                       </div>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl">Электронные подписи</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="inspector-signature">Подпись инспектора</Label>
-                    <Input
-                      id="inspector-signature"
-                      value={inspectorSignature}
-                      onChange={(e) => setInspectorSignature(e.target.value)}
-                      placeholder="Введите ваше ФИО"
-                    />
-                    {inspectorSignature && (
-                      <div className="border-t-2 border-primary pt-2 text-center">
-                        <p className="font-semibold italic text-lg">{inspectorSignature}</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="client-signature">Подпись клиента</Label>
-                    <Input
-                      id="client-signature"
-                      value={clientSignature}
-                      onChange={(e) => setClientSignature(e.target.value)}
-                      placeholder="Введите ФИО клиента"
-                    />
-                    {clientSignature && (
-                      <div className="border-t-2 border-primary pt-2 text-center">
-                        <p className="font-semibold italic text-lg">{clientSignature}</p>
-                      </div>
-                    )}
-                  </div>
                 </CardContent>
               </Card>
 
