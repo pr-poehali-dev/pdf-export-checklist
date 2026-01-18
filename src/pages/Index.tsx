@@ -9,8 +9,8 @@ import Icon from '@/components/ui/icon';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { pdf } from '@react-pdf/renderer';
+import PDFDocument from '@/components/PDFDocument';
 
 interface ChecklistItem {
   id: string;
@@ -193,42 +193,24 @@ const Index = () => {
   };
 
   const exportToPDF = async () => {
-    const element = document.getElementById('inspection-report');
-    if (!element) return;
-
     toast.info('Формирование PDF...');
 
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    const imgWidth = 210;
-    const pageHeight = 297;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+    try {
+      const doc = <PDFDocument address={address} inspectionDate={inspectionDate} checklist={checklist} />;
+      const blob = await pdf(doc).toBlob();
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Акт_осмотра_${inspectionDate}.pdf`;
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      toast.success('PDF сохранен');
+    } catch (error) {
+      toast.error('Ошибка формирования PDF');
+      console.error(error);
     }
-
-    pdf.save(`Акт_осмотра_${inspectionDate}.pdf`);
-    toast.success('PDF сохранен');
   };
 
   const filteredTemplates = selectedCategory 
